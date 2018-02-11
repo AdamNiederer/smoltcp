@@ -1523,7 +1523,7 @@ mod test {
 
     const LOCAL_PORT:   u16          = 80;
     const REMOTE_PORT:  u16          = 49500;
-    const LOCAL_END:    IpEndpoint   = IpEndpoint { addr: MOCK_IP_ADDR_1,  port: LOCAL_PORT  };
+    const LOCAL_END:    IpEndpoint   = IpEndpoint { addr: MOCK_IP_ADDR_1, port: LOCAL_PORT  };
     const REMOTE_END:   IpEndpoint   = IpEndpoint { addr: MOCK_IP_ADDR_2, port: REMOTE_PORT };
     const LOCAL_SEQ:    TcpSeqNumber = TcpSeqNumber(10000);
     const REMOTE_SEQ:   TcpSeqNumber = TcpSeqNumber(-10000);

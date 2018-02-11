@@ -676,9 +676,36 @@ pub mod checksum {
     }
 
     /// Compute an RFC 1071 compliant checksum (without the final complement).
+    #[inline(always)]
+    #[cfg(feature = "simd")]
+    pub fn data(data: &[u8]) -> u16 {
+        use faster::*;
+
+        let final_byte = if data.len() % 2 == 1 {
+            (data[data.len() - 1] as u32) << 8
+        } else {
+            0
+        };
+
+        let data_it = if data.len() % 2 == 1 {
+            &data[..data.len() - 1]
+        } else {
+            data
+        };
+
+        let sum = final_byte + data_it.simd_iter(u8s(0))
+            .simd_map(|v| { let (a, b) = v.be_u16s().from_be().upcast(); a + b })
+            .simd_reduce(u32s(0), |acc, v| acc + v)
+            .scalar_reduce(0u32, |acc, s| acc.overflowing_add(s).0);
+
+        propagate_carries(sum)
+    }
+
+    /// Compute an RFC 1071 compliant checksum (without the final complement).
+    // #[inline(always)] Does not benefit from inlining
+    #[cfg(not(feature = "simd"))]
     pub fn data(mut data: &[u8]) -> u16 {
         let mut accum = 0;
-
         // For each 32-byte chunk...
         const CHUNK_SIZE: usize = 32;
         while data.len() >= CHUNK_SIZE {
@@ -822,6 +849,9 @@ pub fn pretty_print_ip_payload<T: Into<Repr>>(f: &mut fmt::Formatter, indent: &m
 #[cfg(test)]
 pub(crate) mod test {
     #![allow(unused)]
+
+    extern crate test;
+    extern crate rand;
 
     #[cfg(feature = "proto-ipv6")]
     pub(crate) const MOCK_IP_ADDR_1: IpAddress = IpAddress::Ipv6(Ipv6Address([0xfe, 0x80, 0, 0, 0, 0, 0, 0,
@@ -1033,5 +1063,19 @@ pub(crate) mod test {
     #[test]
     fn endpoint_unspecified() {
         assert!(!Endpoint::UNSPECIFIED.is_specified());
+    }
+
+    #[bench]
+    fn bench_checksum_data(b: &mut test::Bencher) {
+        let mut data = [0u8; 256];
+        for i in 0..data.len() {
+            data[i] = rand::random::<u8>();
+        }
+
+        b.iter(|| {
+            test::black_box(
+                super::checksum::data(&data)
+            )
+        });
     }
 }

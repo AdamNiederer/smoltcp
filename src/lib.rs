@@ -1,4 +1,5 @@
 #![cfg_attr(feature = "alloc", feature(alloc))]
+#![cfg_attr(test, feature(test))]
 #![no_std]
 #![deny(unsafe_code)]
 #![cfg_attr(any(feature = "proto-ipv4", feature = "proto-ipv6"), deny(unused))]
@@ -99,6 +100,8 @@ extern crate alloc;
 #[cfg(feature = "log")]
 #[macro_use(log, trace, debug)]
 extern crate log;
+#[cfg(feature = "simd")]
+extern crate faster;
 
 use core::fmt;
 
